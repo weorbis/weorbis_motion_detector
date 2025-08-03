@@ -1,0 +1,27 @@
+name: weorbis_motion_detector
+description: Motion detector plugin for Android and iOS. Provides event-based information about motion detected by the phone.
+version: 1.0.0
+homepage: https://github.com/weorbis/weorbis_motion_detector
+repository: https://github.com/weorbis/weorbis_motion_detector
+publish_to: 'https://pub.dev'
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.weorbis.motion_detector
+        pluginClass: MotionDetectorPlugin
+      ios:
+        pluginClass: MotionDetectorPlugin
