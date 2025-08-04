@@ -1,68 +1,95 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:weorbis_motion_detector/motion_detector_flutter.dart';
+import 'package:weorbis_motion_detector/weorbis_motion_detector.dart';
 
-void main() => runApp(new ActivityRecognitionApp());
+void main() => runApp(const MotionRecognitionApp());
 
-class ActivityRecognitionApp extends StatefulWidget {
+class MotionRecognitionApp extends StatefulWidget {
+  const MotionRecognitionApp({super.key});
+
   @override
-  _ActivityRecognitionAppState createState() => _ActivityRecognitionAppState();
+  State<MotionRecognitionApp> createState() => _MotionRecognitionAppState();
 }
 
-class _ActivityRecognitionAppState extends State<ActivityRecognitionApp> {
-  StreamSubscription<ActivityEvent>? activityStreamSubscription;
-  List<ActivityEvent> _events = [];
-  MotionDetector activityRecognition = MotionDetector();
+class _MotionRecognitionAppState extends State<MotionRecognitionApp> {
+  StreamSubscription<MotionEvent>? _motionStreamSubscription;
+  final List<MotionEvent> _events = [];
+  final MotionDetector _motionDetector = MotionDetector();
+  MotionEvent? _latestEvent;
+  bool _isStreaming = false;
 
   @override
   void initState() {
     super.initState();
-    _init();
-    _events.add(ActivityEvent.unknown());
+    _checkInitialPermission();
+  }
+
+  void _checkInitialPermission() async {
+    bool isGranted = await MotionDetector.requestPermission();
+    if (!isGranted) {
+      // Handle the case where permission is not granted at startup.
+      _showSnackbar("Motion permission is required to use this app.");
+    }
   }
 
   @override
   void dispose() {
-    activityStreamSubscription?.cancel();
+    _motionStreamSubscription?.cancel();
     super.dispose();
   }
 
-  void _init() async {
-    // Android requires explicitly asking permission
-    if (Platform.isAndroid) {
-      if (await Permission.activityRecognition.request().isGranted) {
-        _startTracking();
-      }
-    }
-
-    // iOS does not
-    else {
-      _startTracking();
+  void _startOrStopStreaming() {
+    if (_isStreaming) {
+      _motionStreamSubscription?.cancel();
+      setState(() {
+        _isStreaming = false;
+      });
+    } else {
+      _motionStreamSubscription = _motionDetector
+          .motionStream(
+            androidUpdateIntervalMillis: 10000, // 10 seconds
+            notificationTitle: 'Motion Example',
+            notificationText: 'Detecting your motion in the background.',
+          )
+          .listen(_onMotionEvent, onError: _onError);
+      setState(() {
+        _isStreaming = true;
+      });
     }
   }
 
-  void _startTracking() {
-    activityStreamSubscription = activityRecognition
-        .activityStream(runForegroundService: true)
-        .listen(onData, onError: onError);
+  void _getCurrentActivity() async {
+    try {
+      final event = await _motionDetector.getCurrentActivity();
+      _showSnackbar(
+          'One-shot Event: ${event.typeString} (${event.confidence}%)');
+      setState(() {
+        _latestEvent = event;
+      });
+    } catch (e) {
+      _onError(e);
+    }
   }
 
-  void onData(ActivityEvent activityEvent) {
-    print(activityEvent);
+  void _onMotionEvent(MotionEvent event) {
+    print(event);
     setState(() {
-      _events.add(activityEvent);
+      _events.add(event);
+      _latestEvent = event;
     });
   }
 
-  void onError(Object error) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('ERROR - $error'),
-      ),
-    );
+  void _onError(Object error) {
+    print('onError: $error');
+    if (mounted) {
+      _showSnackbar('Error: $error');
+    }
+  }
+
+  void _showSnackbar(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -70,49 +97,107 @@ class _ActivityRecognitionAppState extends State<ActivityRecognitionApp> {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Activity Recognition'),
+          title: const Text('Motion Detector Example'),
         ),
-        body: Center(
-          child: ListView.builder(
-              itemCount: _events.length,
-              reverse: true,
-              itemBuilder: (_, int idx) {
-                final activity = _events[idx];
-                return ListTile(
-                  leading: _activityIcon(activity.type),
-                  title: Text(
-                      '${activity.type.toString().split('.').last} (${activity.confidence}%)'),
-                  trailing: Text(activity.timeStamp
-                      .toString()
-                      .split(' ')
-                      .last
-                      .split('.')
-                      .first),
-                );
-              }),
+        body: Column(
+          children: [
+            _buildControlPanel(),
+            _buildCurrentStatus(),
+            const Divider(),
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Text('Event History',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+            Expanded(child: _buildEventList()),
+          ],
         ),
       ),
     );
   }
 
-  Icon _activityIcon(ActivityType type) {
+  Widget _buildControlPanel() {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          ElevatedButton(
+            onPressed: _startOrStopStreaming,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _isStreaming ? Colors.red : Colors.green,
+            ),
+            child: Text(_isStreaming ? 'Stop Stream' : 'Start Stream'),
+          ),
+          ElevatedButton(
+            onPressed: _getCurrentActivity,
+            child: const Text('Get Current Activity'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCurrentStatus() {
+    return Card(
+      margin: const EdgeInsets.all(8.0),
+      child: ListTile(
+        leading: _motionIcon(_latestEvent?.type ?? MotionType.UNKNOWN),
+        title: Text(
+          'Latest: ${_latestEvent?.typeString ?? 'N/A'}',
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text('Confidence: ${_latestEvent?.confidence ?? 0}%'),
+        trailing: Text(_latestEvent?.timeStamp
+                .toIso8601String()
+                .split('T')
+                .last
+                .split('.')
+                .first ??
+            ''),
+      ),
+    );
+  }
+
+  Widget _buildEventList() {
+    return ListView.builder(
+      itemCount: _events.length,
+      reverse: true,
+      itemBuilder: (_, int idx) {
+        final motion = _events[idx];
+        return ListTile(
+          leading: _motionIcon(motion.type),
+          title: Text(
+              '${motion.type.toString().split('.').last} (${motion.confidence}%)'),
+          trailing: Text(motion.timeStamp
+              .toIso8601String()
+              .split('T')
+              .last
+              .split('.')
+              .first),
+        );
+      },
+    );
+  }
+
+  Icon _motionIcon(MotionType type) {
     switch (type) {
-      case ActivityType.WALKING:
-        return Icon(Icons.directions_walk);
-      case ActivityType.IN_VEHICLE:
-        return Icon(Icons.car_rental);
-      case ActivityType.ON_BICYCLE:
-        return Icon(Icons.pedal_bike);
-      case ActivityType.ON_FOOT:
-        return Icon(Icons.directions_walk);
-      case ActivityType.RUNNING:
-        return Icon(Icons.run_circle);
-      case ActivityType.STILL:
-        return Icon(Icons.cancel_outlined);
-      case ActivityType.TILTING:
-        return Icon(Icons.redo);
+      case MotionType.WALKING:
+        return const Icon(Icons.directions_walk, color: Colors.blue);
+      case MotionType.IN_VEHICLE:
+        return const Icon(Icons.car_rental, color: Colors.purple);
+      case MotionType.ON_BICYCLE:
+        return const Icon(Icons.pedal_bike, color: Colors.green);
+      case MotionType.ON_FOOT:
+        return const Icon(Icons.directions_walk, color: Colors.orange);
+      case MotionType.RUNNING:
+        return const Icon(Icons.run_circle, color: Colors.red);
+      case MotionType.STILL:
+        return const Icon(Icons.cancel_outlined, color: Colors.grey);
+      case MotionType.TILTING:
+        return const Icon(Icons.redo, color: Colors.brown);
       default:
-        return Icon(Icons.device_unknown);
+        return const Icon(Icons.device_unknown);
     }
   }
 }

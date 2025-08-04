@@ -1,31 +1,32 @@
 # WeOrbis Motion Detector
 
-[![pub package](https://img.shields.io/pub/v/weorbis_motion_detector.svg)](https://pub.dev/packages/weorbis_motion_detector)
+[](https://pub.dev/packages/weorbis_motion_detector)
 
 A Flutter plugin for Android and iOS that provides access to the device's motion activity. It streams activity updates like `STILL`, `WALKING`, `RUNNING`, `IN_VEHICLE`, etc., detected by the phone's hardware.
 
 This package is a modernized fork of the original `activity_recognition_flutter` plugin and works while the app is running in the foreground or background.
 
-
-
----
+-----
 
 ## Features
 
--   Provides a continuous stream of motion activity updates.
--   Parses native activity types into a simple, unified `ActivityEvent` model.
--   Supports running as a foreground service on Android for continuous background monitoring.
--   Simple and lightweight API.
+\-   Provides a continuous stream of motion activity updates.
+\-   Supports running as a foreground service on Android for continuous background monitoring.
 
----
+  - **Configurable update interval** on Android to balance battery life and responsiveness.
+  - **Convenience helpers** for permission requests and one-shot activity fetching.
+    \-   Simple and lightweight API.
+
+-----
 
 ## Platform Support
+
 | Platform | Support |
 | --- | --- |
 | Android | ✅ |
-| iOS     | ✅ |
+| iOS     | ✅ |
 
----
+-----
 
 ## Installation
 
@@ -33,8 +34,8 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  weorbis_motion_detector: ^1.0.0
-````
+  weorbis_motion_detector: ^1.1.0
+```
 
 Then, run `flutter pub get` to install the package.
 
@@ -48,25 +49,13 @@ You need to add permissions and service declarations to your Android Manifest fi
 
 **File**: `android/app/src/main/AndroidManifest.xml`
 
-1.  Add the following permissions inside the `<manifest>` tag:
+1.  Add the following permissions inside the `<manifest>` tag:
 
-    ```xml
-    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
-    <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
+    ` xml     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />     <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />      `
 
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    ```
+2.  Add the plugin's service and receiver declarations inside the `<application>` tag:
 
-2.  Add the plugin's service and receiver declarations inside the `<application>` tag:
-
-    ```xml
-    <receiver android:name="com.weorbis.motion_detector.ActivityRecognizedBroadcastReceiver"/>
-    <service
-        android:name="com.weorbis.motion_detector.ActivityRecognizedService"
-        android:permission="android.permission.BIND_JOB_SERVICE"
-        android:exported="true"/>
-    <service android:name="com.weorbis.motion_detector.ForegroundService" />
-    ```
+    ` xml     <receiver android:name="com.weorbis.motion_detector.ActivityRecognizedBroadcastReceiver" android:exported="true"/>     <service         android:name="com.weorbis.motion_detector.ActivityRecognizedService"         android:permission="android.permission.BIND_JOB_SERVICE"         android:exported="false"/>     <service android:name="com.weorbis.motion_detector.ForegroundService" />      `
 
 ### iOS
 
@@ -85,28 +74,35 @@ To access motion data, add the `NSMotionUsageDescription` key to your `Info.plis
 
 ## Usage
 
-To use this plugin, you should also use the [permission\_handler](https://pub.dev/packages/permission_handler) package to request permissions on Android. On iOS, no explicit permission dialog is needed for Core Motion activity updates.
+### 1\. Requesting Permission
+
+First, use the convenient built-in helper to request the necessary permissions.
 
 ```dart
-import 'package:weorbis_motion_detector/motion_detector_flutter.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'dart:io';
+import 'package:weorbis_motion_detector/weorbis_motion_detector.dart';
 
-// ...
+bool isPermissionGranted = await MotionDetector.requestPermission();
+if (isPermissionGranted) {
+  // Proceed to start listening to motion updates.
+} else {
+  // Handle the case where the user denies the permission.
+}
+```
 
-MotionDetector motionDetector = MotionDetector();
-StreamSubscription<ActivityEvent>? streamSubscription;
+### 2\. Listening to the Motion Stream
 
-void _startTracking() async {
-  if (Platform.isAndroid) {
-    if (await Permission.activityRecognition.request().isGranted) {
-      // Permission granted, start listening
-    }
-  }
-  
-  streamSubscription = motionDetector.activityStream().listen((ActivityEvent event) {
-    print('Activity Detected: ${event.type} (${event.confidence}%)');
-    // Add event to a list and rebuild the UI
+To get a continuous stream of updates, use `motionStream()`. This is ideal for apps that need to constantly react to changes in user activity.
+
+```dart
+StreamSubscription<MotionEvent>? streamSubscription;
+final MotionDetector _motionDetector = MotionDetector();
+
+void startStreaming() {
+  streamSubscription = _motionDetector.motionStream(
+    // Optional: Check every 10 seconds on Android
+    androidUpdateIntervalMillis: 10000, 
+  ).listen((MotionEvent event) {
+    print('New Stream Event: ${event.type} (${event.confidence}%)');
   });
 }
 
@@ -118,15 +114,32 @@ void dispose() {
 }
 ```
 
-### The `ActivityEvent` Model
+### 3\. Getting a Single "On-Demand" Update
 
-The stream returns `ActivityEvent` objects with the following properties:
+If you only need to know the user's current activity once, use `getCurrentActivity()`.
 
-  * **`type`**: An `enum` (`ActivityType`) representing the detected activity.
+```dart
+final MotionDetector _motionDetector = MotionDetector();
+
+void checkCurrentActivity() async {
+  try {
+    MotionEvent event = await _motionDetector.getCurrentActivity();
+    print('Current Activity: ${event.type} (${event.confidence}%)');
+  } catch (e) {
+    print("Error getting current activity: $e");
+  }
+}
+```
+
+### The `MotionEvent` Model
+
+The stream returns `MotionEvent` objects with the following properties:
+
+  * **`type`**: An `enum` (`MotionType`) representing the detected activity.
   * **`confidence`**: An `int` (0-100) representing the confidence of the detection.
   * **`timeStamp`**: A `DateTime` object for when the event was created.
 
-The possible `ActivityType` values are:
+The possible `MotionType` values are:
 
   * `IN_VEHICLE`
   * `ON_BICYCLE`
@@ -137,6 +150,30 @@ The possible `ActivityType` values are:
   * `WALKING`
   * `UNKNOWN`
   * `INVALID` (used for parsing errors)
+
+### Android Foreground Service Configuration
+
+You can customize the persistent notification that appears when running in the background on Android.
+
+```dart
+motionDetector.motionStream(
+  runForegroundService: true,
+  notificationTitle: "Motion Activity",
+  notificationText: "Monitoring your activity to provide great features.",
+  // IMPORTANT: 'notificationIcon' must be a valid drawable resource
+  // located in `your_android_project/app/src/main/res/drawable/`.
+  // Do not include the file extension.
+  notificationIcon: "my_custom_notification_icon",
+);
+```
+
+### iOS Confidence Note
+
+On iOS, the native API provides confidence as an enum (`low`, `medium`, `high`). This plugin maps them to integer values to align with Android:
+
+  * `low` = **10%**
+  * `medium` = **50%**
+  * `high` = **100%**
 
 -----
 

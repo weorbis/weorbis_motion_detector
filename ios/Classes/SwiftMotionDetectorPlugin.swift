@@ -2,76 +2,72 @@ import Flutter
 import UIKit
 import CoreMotion
 
-
+/// The main plugin class for the iOS implementation.
 public class SwiftMotionDetectorPlugin: NSObject, FlutterPlugin {
-
   public static func register(with registrar: FlutterPluginRegistrar) {
-    let handler = ActivityStreamHandler() 
+    let handler = ActivityStreamHandler()
     let channel = FlutterEventChannel(name: "weorbis_motion_detector", binaryMessenger: registrar.messenger())
     channel.setStreamHandler(handler)
   }
 }
+
+/// A stream handler that manages motion activity updates from CoreMotion.
 public class ActivityStreamHandler: NSObject, FlutterStreamHandler {
 
   private let activityManager = CMMotionActivityManager()
 
+  /// Called when Flutter begins listening to the event stream.
   public func onListen(withArguments arguments: Any?, eventSink: @escaping FlutterEventSink) -> FlutterError? {
     guard CMMotionActivityManager.isActivityAvailable() else {
-        return FlutterError(code: "SENSOR_NOT_AVAILABLE", message: "Motion activity is not available on this device", details: nil)
+        return FlutterError(code: "UNAVAILABLE", message: "Motion activity is not available on this device.", details: nil)
     }
     
-    activityManager.startActivityUpdates(to: OperationQueue.init()) { (activity) in
-        if let a = activity {
-            
-            let type = self.extractActivityType(a: a)
-            let confidence = self.extractActivityConfidence(a: a)
+    activityManager.startActivityUpdates(to: OperationQueue.main) { (activity) in
+        if let activity = activity {
+            let type = self.getMotionType(from: activity)
+            let confidence = self.getConfidence(from: activity.confidence)
             let data = "\(type),\(confidence)"
-
-            /// Send event to flutter
             eventSink(data)
         }
     }
     return nil
   }
 
+  /// Called when Flutter cancels the stream subscription.
   public func onCancel(withArguments arguments: Any?) -> FlutterError? {
     activityManager.stopActivityUpdates()
     return nil
   }
 
-  func extractActivityType(a: CMMotionActivity) -> String {
-    var type = "UNKNOWN"
+  /// Converts a CMMotionActivity object into a standardized string type.
+  private func getMotionType(from activity: CMMotionActivity) -> String {
     switch true {
-    case a.stationary:
-        type = "STILL"
-    case a.walking:
-        type = "WALKING"
-    case a.running:
-        type = "RUNNING"
-    case a.automotive:
-        type = "IN_VEHICLE"
-    case a.cycling:
-        type = "ON_BICYCLE"
+    case activity.stationary:
+        return "STILL"
+    case activity.walking:
+        return "WALKING"
+    case activity.running:
+        return "RUNNING"
+    case activity.automotive:
+        return "IN_VEHICLE"
+    case activity.cycling:
+        return "ON_BICYCLE"
     default:
-        type = "UNKNOWN"
+        return "UNKNOWN"
     }
-    return type
   }
 
-  func extractActivityConfidence(a: CMMotionActivity) -> Int {
-    var conf = -1
-    
-    switch a.confidence {
-    case CMMotionActivityConfidence.low:
-        conf = 10
-    case CMMotionActivityConfidence.medium:
-        conf = 50
-    case CMMotionActivityConfidence.high:
-        conf = 100
+  /// Converts a CMMotionActivityConfidence enum into an integer percentage.
+  private func getConfidence(from confidence: CMMotionActivityConfidence) -> Int {
+    switch confidence {
+    case .low:
+        return 10
+    case .medium:
+        return 50
+    case .high:
+        return 100
     default:
-        conf = -1
+        return 0
     }
-    return conf
   }
-
 }

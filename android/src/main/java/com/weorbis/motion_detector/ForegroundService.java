@@ -9,8 +9,10 @@ import android.app.NotificationManager;
 import android.os.IBinder;
 import android.os.Bundle;
 import android.annotation.TargetApi;
+import android.util.Log;
 
 public class ForegroundService extends Service {
+    private final String TAG = "ForegroundService";
 
     public ForegroundService() {
         super();
@@ -19,35 +21,27 @@ public class ForegroundService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Bundle bundle = new Bundle();
-        bundle.putString("title", "Foreground service");
-        bundle.putString("text", "Foreground monitoring service");
-        startPluginForegroundService(bundle);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (intent != null && intent.getExtras() != null) {
+            startPluginForegroundService(intent.getExtras());
+        } else {
+            Log.e(TAG, "Attempted to start foreground service with null intent or extras.");
+        }
         return START_STICKY;
     }
 
     @TargetApi(26)
     private void startPluginForegroundService(Bundle extras) {
         Context context = getApplicationContext();
-
-        // Delete notification channel if it already exists
-        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        manager.deleteNotificationChannel("foreground.service.channel");
+        String channelId = "foreground.service.channel";
 
         // Get notification channel importance
-        Integer importance;
-
-        try {
-            importance = Integer.parseInt((String) extras.get("importance"));
-        } catch (NumberFormatException e) {
-            importance = 1;
-        }
-
-        switch (importance) {
+        int importanceValue = extras.getInt("importance", 1);
+        int importance;
+        switch (importanceValue) {
             case 2:
                 importance = NotificationManager.IMPORTANCE_DEFAULT;
                 break;
@@ -56,40 +50,39 @@ public class ForegroundService extends Service {
                 break;
             default:
                 importance = NotificationManager.IMPORTANCE_LOW;
-                // We are not using IMPORTANCE_MIN because we want the notification to be visible
         }
 
         // Create notification channel
-        NotificationChannel channel = new NotificationChannel("foreground.service.channel", "Background Services", importance);
-        channel.setDescription("Enables background processing.");
+        NotificationChannel channel = new NotificationChannel(channelId, "Background Services", importance);
+        channel.setDescription("Enables background processing for motion detection.");
         getSystemService(NotificationManager.class).createNotificationChannel(channel);
 
         // Get notification icon
-//        int icon = getResources().getIdentifier((String) extras.get("icon"), "drawable", context.getPackageName());
-        int icon = R.drawable.common_full_open_on_phone;
-        
-        // Make notification
-        Notification notification = new Notification.Builder(context, "foreground.service.channel")
-                .setContentTitle((CharSequence) extras.get("title"))
-                .setContentText((CharSequence) extras.get("text"))
-                .setOngoing(true)
-                .setSmallIcon(icon == 0 ? 17301514 : icon) // Default is the star icon
-                .build();
-
-        // Get notification ID
-        Integer id;
-        try {
-            id = Integer.parseInt((String) extras.get("id"));
-        } catch (NumberFormatException e) {
-            id = 0;
+        String iconName = extras.getString("icon");
+        int icon = 0;
+        if (iconName != null) {
+            icon = getResources().getIdentifier(iconName, "drawable", context.getPackageName());
+        }
+        if (icon == 0) {
+            icon = getResources().getIdentifier("ic_launcher", "mipmap", context.getPackageName());
         }
 
-        // Put service in foreground and show notification (id of 0 is not allowed)
-        startForeground(id != 0 ? id : 197812504, notification);
+        // Make notification
+        Notification notification = new Notification.Builder(context, channelId)
+                .setContentTitle(extras.getString("title"))
+                .setContentText(extras.getString("text"))
+                .setOngoing(true)
+                .setSmallIcon(icon != 0 ? icon : 17301514) // Default is the star icon
+                .build();
+
+        int id = extras.getInt("id", 197812504);
+
+        // Put service in foreground and show notification
+        startForeground(id, notification);
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return null;
     }
 }

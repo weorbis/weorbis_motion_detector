@@ -12,7 +12,7 @@ import 'package:weorbis_motion_detector_example/main.dart';
 void main() {
   testWidgets('Verify Platform version', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(ActivityRecognitionApp());
+    await tester.pumpWidget(MotionRecognitionApp());
 
     // Verify that platform version is retrieved.
     expect(
