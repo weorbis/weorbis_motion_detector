@@ -51,11 +51,19 @@ You need to add permissions and service declarations to your Android Manifest fi
 
 1.  Add the following permissions inside the `<manifest>` tag:
 
-    ` xml     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />     <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />      `
+```xml     
+<uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+<uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+```
 
 2.  Add the plugin's service and receiver declarations inside the `<application>` tag:
 
-    ` xml     <receiver android:name="com.weorbis.motion_detector.ActivityRecognizedBroadcastReceiver" android:exported="true"/>     <service         android:name="com.weorbis.motion_detector.ActivityRecognizedService"         android:permission="android.permission.BIND_JOB_SERVICE"         android:exported="false"/>     <service android:name="com.weorbis.motion_detector.ForegroundService" />      `
+```xml
+<receiver android:name="com.weorbis.motion_detector.ActivityRecognizedBroadcastReceiver" android:exported="true"/>
+<service android:name="com.weorbis.motion_detector.ActivityRecognizedService" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false"/>
+<service android:name="com.weorbis.motion_detector.ForegroundService" />
+```
 
 ### iOS
 
