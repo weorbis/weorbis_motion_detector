@@ -71,12 +71,10 @@ If your app needs to explicitly declare or override the merged settings, add the
 ```xml
 <receiver
     android:name="com.weorbis.motion_detector.ActivityRecognizedBroadcastReceiver"
-    android:exported="true"/>
+    android:exported="false" />
 <service
-    android:name="com.weorbis.motion_detector.ActivityRecognizedService"
-    android:permission="android.permission.BIND_JOB_SERVICE"
-    android:exported="false"/>
-<service android:name="com.weorbis.motion_detector.ForegroundService" />
+    android:name="com.weorbis.motion_detector.ForegroundService"
+    android:exported="false" />
 ```
 
 ### iOS

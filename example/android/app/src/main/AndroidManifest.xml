@@ -12,12 +12,10 @@
             android:theme="@style/LaunchTheme"
             android:windowSoftInputMode="adjustResize"
             android:exported="true">
-
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
             <meta-data
                 android:name="io.flutter.embedding.android.SplashScreenDrawable"
                 android:resource="@drawable/launch_background" />
@@ -26,9 +24,25 @@
                 android:resource="@style/NormalTheme" />
         </activity>
 
-        <!-- Don't delete the meta-data below. -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- BroadcastReceiver to receive ActivityRecognition updates -->
+        <!-- No intent-filter is required because we use an explicit class PendingIntent -->
+        <receiver
+            android:name="com.weorbis.motion_detector.ActivityRecognizedBroadcastReceiver"
+            android:exported="false" />
+
+        <!-- Optional: Foreground service for continuous background operation -->
+        <service
+            android:name="com.weorbis.motion_detector.ForegroundService"
+            android:exported="false" />
     </application>
+
+    <!-- Permissions: For API 29+ you need android.permission.ACTIVITY_RECOGNITION (runtime).
+         For API 28 and earlier, Play services used com.google.android.gms.permission.ACTIVITY_RECOGNITION. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 </manifest>
