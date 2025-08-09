@@ -85,7 +85,12 @@ class MotionDetector {
   /// Returns the single most recent [MotionEvent] without setting up a continuous stream.
   ///
   /// This is useful for getting the user's current state on-demand.
-  Future<MotionEvent> getCurrentActivity() {
-    return motionStream().first;
+  /// On Android, this **does not** start the foreground service.
+  Future<MotionEvent> getCurrentActivity({
+    Duration timeout = const Duration(seconds: 8),
+  }) {
+    return motionStream(runForegroundService: false)
+        .first
+        .timeout(timeout, onTimeout: () => MotionEvent.unknown());
   }
 }

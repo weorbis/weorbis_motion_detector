@@ -34,7 +34,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  weorbis_motion_detector: ^1.1.0
+  weorbis_motion_detector: ^1.1.1
 ```
 
 Then, run `flutter pub get` to install the package.
@@ -45,23 +45,37 @@ Then, run `flutter pub get` to install the package.
 
 ### Android
 
-You need to add permissions and service declarations to your Android Manifest file.
+Android is plug-and-play by default. No manual changes to `AndroidManifest.xml` are required for common use cases — the plugin provides the required permissions and components via manifest merging.
+
+Notes:
+
+  - On Android 10+ you must request the runtime permission for `ACTIVITY_RECOGNITION`. Use `MotionDetector.requestPermission()` (see Usage below).
+  - Foreground service will only run if you opt in via `runForegroundService: true` when starting the stream.
+
+Optional: Manual override (only if you need to customize or opt out of defaults)
+
+If your app needs to explicitly declare or override the merged settings, add the following to your app manifest.
 
 **File**: `android/app/src/main/AndroidManifest.xml`
 
-1.  Add the following permissions inside the `<manifest>` tag:
+1. Inside the `<manifest>` tag:
 
-```xml     
+```xml
 <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
 <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 ```
 
-2.  Add the plugin's service and receiver declarations inside the `<application>` tag:
+2. Inside the `<application>` tag:
 
 ```xml
-<receiver android:name="com.weorbis.motion_detector.ActivityRecognizedBroadcastReceiver" android:exported="true"/>
-<service android:name="com.weorbis.motion_detector.ActivityRecognizedService" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="false"/>
+<receiver
+    android:name="com.weorbis.motion_detector.ActivityRecognizedBroadcastReceiver"
+    android:exported="true"/>
+<service
+    android:name="com.weorbis.motion_detector.ActivityRecognizedService"
+    android:permission="android.permission.BIND_JOB_SERVICE"
+    android:exported="false"/>
 <service android:name="com.weorbis.motion_detector.ForegroundService" />
 ```
 
@@ -96,6 +110,12 @@ if (isPermissionGranted) {
   // Handle the case where the user denies the permission.
 }
 ```
+
+Note on one-shot behavior
+
+  - `getCurrentActivity()` performs a single check and resolves once.
+  - It does not start or keep a foreground service running.
+  - On Android, it returns the best available current (or most recent) recognized activity, depending on sensor availability at call time.
 
 ### 2\. Listening to the Motion Stream
 

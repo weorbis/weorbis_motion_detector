@@ -1,3 +1,13 @@
+# 1.1.1
+
+* **FEAT**: `getCurrentActivity()` no longer starts the Android foreground service and now includes a configurable timeout.
+* **FIX**: Replaced broken example widget test with a working app bar title check.
+* **CHORE**: Removed unused `permission_handler` dev dependency from the example project.
+* **FEAT**: Android plugin manifest now declares required receiver, services, and permissions — no manual manifest edits needed in consuming apps.
+* **CHORE**: Cleaned up example app manifest to avoid duplicate declarations.
+* **DOCS**: Updated README to reflect the recent changes.
+* **CHORE**: Added `.flutter-plugins-dependencies` to `.gitignore`.
+
 # 1.1.0
 
 * **CRITICAL FIX**: Corrected bug on Android that used a non-existent `MotionDetector` API. The plugin now correctly uses `ActivityRecognitionClient`.

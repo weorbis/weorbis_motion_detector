@@ -53,7 +53,7 @@ public class ActivityRecognizedService extends JobIntentService {
         // Same preferences as in MotionDetectorPlugin.java
         SharedPreferences preferences =
                 getApplicationContext().getSharedPreferences(
-                        MotionDetectorPlugin.MOTION_DETECTOR, MODE_PRIVATE);
+                        MotionDetectorPlugin.PREFS_NAME, MODE_PRIVATE);
 
         preferences.edit().clear()
                 .putString(

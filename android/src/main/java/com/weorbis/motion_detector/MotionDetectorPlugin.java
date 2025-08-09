@@ -34,6 +34,8 @@ public class MotionDetectorPlugin implements FlutterPlugin, EventChannel.StreamH
     public static final String DETECTED_ACTIVITY = "detected_activity";
     public static final String MOTION_DETECTOR = "com.weorbis.motion_detector.preferences";
     private final String TAG = "weorbis_motion_detector";
+    public static final String EVENT_CHANNEL = "weorbis_motion_detector";
+    public static final String PREFS_NAME   = "com.weorbis.motion_detector.preferences";
 
     private String notificationTitle;
     private String notificationText;
@@ -63,7 +65,7 @@ public class MotionDetectorPlugin implements FlutterPlugin, EventChannel.StreamH
 
     @Override
     public void onAttachedToEngine(@NonNull FlutterPluginBinding flutterPluginBinding) {
-        channel = new EventChannel(flutterPluginBinding.getBinaryMessenger(), MOTION_DETECTOR);
+        channel = new EventChannel(flutterPluginBinding.getBinaryMessenger(), EVENT_CHANNEL);
         channel.setStreamHandler(this);
         androidContext = flutterPluginBinding.getApplicationContext();
     }
@@ -124,7 +126,7 @@ public class MotionDetectorPlugin implements FlutterPlugin, EventChannel.StreamH
 
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
-        SharedPreferences prefs = androidContext.getSharedPreferences(MOTION_DETECTOR, Context.MODE_PRIVATE);
+        SharedPreferences prefs = androidContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         prefs.registerOnSharedPreferenceChangeListener(this);
     }
 
