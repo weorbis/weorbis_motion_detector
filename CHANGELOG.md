@@ -1,4 +1,4 @@
-# 1.1.1
+# 1.1.2
 
 * **FEAT**: `getCurrentActivity()` no longer starts the Android foreground service and now includes a configurable timeout.
 * **FIX**: Replaced broken example widget test with a working app bar title check.
@@ -7,6 +7,8 @@
 * **CHORE**: Cleaned up example app manifest to avoid duplicate declarations.
 * **DOCS**: Updated README to reflect the recent changes.
 * **CHORE**: Added `.flutter-plugins-dependencies` to `.gitignore`.
+* **FIX**: Removed deprecated `JobIntentService` usage and migrated logic into a `BroadcastReceiver` with null-safety checks to prevent crashes on null `ActivityRecognitionResult`.
+* **CHORE**: Updated Android build to use Java 17 to comply with AGP 8.x requirements and remove "source value 8 is obsolete" warnings.
 
 # 1.1.0
 

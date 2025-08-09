@@ -4,7 +4,7 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'weorbis_motion_detector'
-  s.version          = '1.1.1'
+  s.version          = '1.1.2'
   s.summary          = 'A Flutter plugin for Android and iOS that provides access to the device motion activity.'
   s.description      = <<-DESC
     A Flutter plugin for Android and iOS that provides access to the device's motion activity. It streams activity updates like `STILL`, `WALKING`, `RUNNING`, `IN_VEHICLE`, etc., detected by the phone's hardware.
